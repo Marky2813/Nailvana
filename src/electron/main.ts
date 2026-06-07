@@ -1,4 +1,4 @@
-import { app, BrowserWindow} from 'electron';
+import { app, BrowserWindow, session} from 'electron';
 import path from 'path';
 import { isDev } from './utils.js';
 import { getPreloadPath } from './pathResolver.js';
@@ -10,6 +10,10 @@ import { getPreloadPath } from './pathResolver.js';
 // const __dirname = path.dirname(__filename);
 
 app.on('ready', () => {
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    callback(permission === 'media');
+  });
+
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: getPreloadPath(), 

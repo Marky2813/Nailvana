@@ -1,12 +1,16 @@
 {
   "appId": "com.narulasarthak.catchchew", 
   "productName": "CatchChew",
+  "extraResources": ["dist-electron/preload.cjs"],
   "files": [
     "dist-electron/**/*",
     "dist-react/**/*"],
   "icon": "app.png", 
   "mac": {
-    "target": "dmg"
+    "target": "dmg",
+    "extendInfo": {
+      "NSCameraUsageDescription": "CatchChew uses your camera to detect chewing habits locally."
+    }
   },
   "win": {
     "target": ["portable", "msi"]
