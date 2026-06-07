@@ -5,16 +5,17 @@
   "main": "dist-electron/main.js",
   "type": "module",
   "scripts": {
-    "dev:react": "vite",
-    "dev:electron": "electron .",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "transpile:electron": "tsc --project src/electron/tsconfig.json",
-    "dist:mac": "bun run transpile:electron && bun run build && electron-builder --mac --arm64",
-    "dist:win": "bun run transpile:electron && bun run build && electron-builder --win --x64",
-    "dist:linux": "bun run transpile:electron && bun run build && electron-builder --linux --x64"
-  },
+  "dev": "bun run --parallel dev:react dev:electron",
+  "dev:react": "vite",
+  "dev:electron": "cross-env NODE_ENV=development electron .",
+  "build": "tsc -b && vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "transpile:electron": "tsc --project src/electron/tsconfig.json",
+  "dist:mac": "bun run transpile:electron && bun run build && electron-builder --mac --arm64",
+  "dist:win": "bun run transpile:electron && bun run build && electron-builder --win --x64",
+  "dist:linux": "bun run transpile:electron && bun run build && electron-builder --linux --x64"
+},
   "dependencies": {
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
@@ -25,6 +26,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "cross-env": "^10.1.0",
     "electron": "^42.3.3",
     "electron-builder": "^26.15.0",
     "eslint": "^10.3.0",
