@@ -1,0 +1,18 @@
+{
+  "appId": "com.narulasarthak.catchchew", 
+  "productName": "CatchChew",
+  "files": [
+    "dist-electron/**/*",
+    "dist-react/**/*"],
+  "icon": "app.png", 
+  "mac": {
+    "target": "dmg"
+  },
+  "win": {
+    "target": ["portable", "msi"]
+  },
+  "linux": {
+    "target": "AppImage", 
+    "category": "Utility"
+  }
+}
