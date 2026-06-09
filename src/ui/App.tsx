@@ -15,11 +15,26 @@ const FACE_LANDMARKER_MODEL_URL =
 const HAND_LANDMARKER_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
 const FINGERTIP_LANDMARK_INDICES = [4, 8, 12, 16, 20]
+const LIP_STRIP_COUNT = 3
+const CHEWING_HUE_DELTA_THRESHOLD = 5
+const CHEWING_SATURATION_DELTA_THRESHOLD = 0.15
+const CHEWING_SUSTAINED_THRESHOLD_MS = 4000
+const CHEWING_COOLDOWN_MS = 60000
+
+type HsvAverage = {
+  hueAverage: number
+  saturationAverage: number
+}
 
 let latestFaceLandmarks: NormalizedLandmark[] | null = null
 let latestHandLandmarks: NormalizedLandmark[][] | null = null
-let hueAverage: number | null = null
-let saturationAverage: number | null = null
+let lipStripCalibrationAverages: Array<HsvAverage | null> = Array.from(
+  { length: LIP_STRIP_COUNT },
+  () => null,
+)
+let sustainedCounterMs = 0
+let chewingCooldownUntil = 0
+let isCalibrationComplete = false
 
 function rgbaToHsv(red: number, green: number, blue: number) {
   const normalizedRed = red / 255
@@ -61,13 +76,26 @@ function averageHue(firstHue: number, secondHue: number) {
   return average < 0 ? average + 360 : average
 }
 
-function updateCalibrationAverage(frameHueAverage: number, frameSaturationAverage: number) {
-  hueAverage =
-    hueAverage === null ? frameHueAverage : averageHue(hueAverage, frameHueAverage)
-  saturationAverage =
-    saturationAverage === null
-      ? frameSaturationAverage
-      : (saturationAverage + frameSaturationAverage) / 2
+function getHueDelta(firstHue: number, secondHue: number) {
+  const rawDelta = Math.abs(firstHue - secondHue)
+
+  return Math.min(rawDelta, 360 - rawDelta)
+}
+
+function updateCalibrationAverages(frameAverages: HsvAverage[]) {
+  lipStripCalibrationAverages = frameAverages.map((frameAverage, index) => {
+    const calibrationAverage = lipStripCalibrationAverages[index]
+
+    if (calibrationAverage === null) {
+      return frameAverage
+    }
+
+    return {
+      hueAverage: averageHue(calibrationAverage.hueAverage, frameAverage.hueAverage),
+      saturationAverage:
+        (calibrationAverage.saturationAverage + frameAverage.saturationAverage) / 2,
+    }
+  })
 }
 
 function onFaceResult(result: FaceLandmarkerResult) {
@@ -109,6 +137,22 @@ function App() {
         canvas.height = videoHeight
       }
 
+      const upperMouthLandmark = latestFaceLandmarks[13]
+      const lowerMouthLandmark = latestFaceLandmarks[14]
+
+      if (upperMouthLandmark && lowerMouthLandmark) {
+        const upperMouthX = upperMouthLandmark.x * canvas.width
+        const upperMouthY = upperMouthLandmark.y * canvas.height
+        const lowerMouthX = lowerMouthLandmark.x * canvas.width
+        const lowerMouthY = lowerMouthLandmark.y * canvas.height
+        const mouthDistance = Math.hypot(
+          lowerMouthX - upperMouthX,
+          lowerMouthY - upperMouthY,
+        )
+
+        console.log('mouth distance', mouthDistance)
+      }
+
       const context = canvas.getContext('2d')
 
       if (!context) {
@@ -148,66 +192,74 @@ function App() {
           }
         }
       }
+
+      if (!isCalibrationComplete) {
+        return
+      }
+
+      if (Date.now() < chewingCooldownUntil) {
+        // console.log('Chewing detection cooldown active', {
+        //   cooldownMsRemaining: chewingCooldownUntil - Date.now(),
+        // })
+        return
+      }
+
+      const lipStripAverages = getLipStripHsvAverages()
+
+      if (!lipStripAverages) {
+        sustainedCounterMs = 0
+        return
+      }
+
+      const stripDeltas = lipStripAverages.map((lipStripAverage, index) => {
+        const calibrationAverage = lipStripCalibrationAverages[index]
+
+        if (calibrationAverage === null) {
+          return null
+        }
+
+        const hueDelta = getHueDelta(
+          lipStripAverage.hueAverage,
+          calibrationAverage.hueAverage,
+        )
+        const saturationDelta = Math.abs(
+          lipStripAverage.saturationAverage - calibrationAverage.saturationAverage,
+        )
+
+        return {
+          hueDelta,
+          saturationDelta,
+          isChewingCandidate:
+            hueDelta > CHEWING_HUE_DELTA_THRESHOLD &&
+            saturationDelta > CHEWING_SATURATION_DELTA_THRESHOLD,
+          stripIndex: index,
+        }
+      })
+      const isChewingCandidate = stripDeltas.some(
+        (stripDelta) => stripDelta?.isChewingCandidate,
+      )
+
+      // console.log('Chewing detection debug', {
+      //   stripDeltas,
+      //   sustainedCounterMs,
+      //   isChewingCandidate,
+      // })
+
+      if (isChewingCandidate) {
+        sustainedCounterMs += 250
+
+        if (sustainedCounterMs >= CHEWING_SUSTAINED_THRESHOLD_MS) {
+          console.log('chewing detected')
+          sustainedCounterMs = 0
+          chewingCooldownUntil = Date.now() + CHEWING_COOLDOWN_MS
+        }
+      } else {
+        sustainedCounterMs = 0
+      }
     }, 250)
     let isCancelled = false
 
-    function sampleLipStrip() {
-      const video = videoRef.current
-      const faceLandmarks = latestFaceLandmarks
-
-      if (!video || !faceLandmarks) {
-        return
-      }
-
-      const upperLip = faceLandmarks[13]
-      const lowerLip = faceLandmarks[14]
-      const videoWidth = video.videoWidth
-      const videoHeight = video.videoHeight
-
-      if (!upperLip || !lowerLip || videoWidth === 0 || videoHeight === 0) {
-        return
-      }
-
-      const calibrationCanvas =
-        calibrationCanvasRef.current ?? document.createElement('canvas')
-      calibrationCanvasRef.current = calibrationCanvas
-      calibrationCanvas.width = videoWidth
-      calibrationCanvas.height = videoHeight
-
-      const calibrationContext = calibrationCanvas.getContext('2d', {
-        willReadFrequently: true,
-      })
-
-      if (!calibrationContext) {
-        return
-      }
-
-      calibrationContext.drawImage(video, 0, 0, videoWidth, videoHeight)
-
-      const upperLipX = upperLip.x * videoWidth
-      const upperLipY = upperLip.y * videoHeight
-      const lowerLipX = lowerLip.x * videoWidth
-      const lowerLipY = lowerLip.y * videoHeight
-      const centerX = (upperLipX + lowerLipX) / 2
-      const centerY = (upperLipY + lowerLipY) / 2
-      const lipDistance = Math.hypot(lowerLipX - upperLipX, lowerLipY - upperLipY)
-      const stripWidth = Math.max(12, lipDistance * 4)
-      const stripHeight = Math.max(4, Math.abs(lowerLipY - upperLipY) + 4)
-      const stripX = Math.max(0, Math.floor(centerX - stripWidth / 2))
-      const stripY = Math.max(0, Math.floor(centerY - stripHeight / 2))
-      const boundedStripWidth = Math.min(videoWidth - stripX, Math.ceil(stripWidth))
-      const boundedStripHeight = Math.min(videoHeight - stripY, Math.ceil(stripHeight))
-
-      if (boundedStripWidth <= 0 || boundedStripHeight <= 0) {
-        return
-      }
-
-      const { data } = calibrationContext.getImageData(
-        stripX,
-        stripY,
-        boundedStripWidth,
-        boundedStripHeight,
-      )
+    function getHsvAverageFromPixelData(data: Uint8ClampedArray): HsvAverage | null {
       let hueXTotal = 0
       let hueYTotal = 0
       let saturationTotal = 0
@@ -224,21 +276,125 @@ function App() {
       }
 
       if (pixelCount === 0) {
+        return null
+      }
+
+      return {
+        hueAverage:
+          ((Math.atan2(hueYTotal / pixelCount, hueXTotal / pixelCount) * 180) /
+            Math.PI +
+            360) %
+          360,
+        saturationAverage: saturationTotal / pixelCount,
+      }
+    }
+
+    function getLipStripHsvAverages() {
+      const video = videoRef.current
+      const faceLandmarks = latestFaceLandmarks
+
+      if (!video || !faceLandmarks) {
+        return null
+      }
+
+      const upperLip = faceLandmarks[13]
+      const lowerLip = faceLandmarks[14]
+      const leftLip = faceLandmarks[61]
+      const rightLip = faceLandmarks[291]
+      const videoWidth = video.videoWidth
+      const videoHeight = video.videoHeight
+
+      if (
+        !upperLip ||
+        !lowerLip ||
+        !leftLip ||
+        !rightLip ||
+        videoWidth === 0 ||
+        videoHeight === 0
+      ) {
+        return null
+      }
+
+      const calibrationCanvas =
+        calibrationCanvasRef.current ?? document.createElement('canvas')
+      calibrationCanvasRef.current = calibrationCanvas
+      calibrationCanvas.width = videoWidth
+      calibrationCanvas.height = videoHeight
+
+      const calibrationContext = calibrationCanvas.getContext('2d', {
+        willReadFrequently: true,
+      })
+
+      if (!calibrationContext) {
+        return null
+      }
+
+      calibrationContext.drawImage(video, 0, 0, videoWidth, videoHeight)
+
+      const upperLipY = upperLip.y * videoHeight
+      const lowerLipY = lowerLip.y * videoHeight
+      const leftLipX = leftLip.x * videoWidth
+      const rightLipX = rightLip.x * videoWidth
+      const stripX = Math.max(0, Math.floor(Math.min(leftLipX, rightLipX)))
+      const stripY = Math.max(0, Math.floor(Math.min(upperLipY, lowerLipY)))
+      const stripRight = Math.min(videoWidth, Math.ceil(Math.max(leftLipX, rightLipX)))
+      const stripBottom = Math.min(videoHeight, Math.ceil(Math.max(upperLipY, lowerLipY)))
+      const boundedStripWidth = stripRight - stripX
+      const boundedStripHeight = stripBottom - stripY
+
+      if (boundedStripWidth <= 0 || boundedStripHeight <= 0) {
+        return null
+      }
+
+      const stripAverages: HsvAverage[] = []
+
+      for (let stripIndex = 0; stripIndex < LIP_STRIP_COUNT; stripIndex += 1) {
+        const regionX = Math.floor(
+          stripX + (boundedStripWidth * stripIndex) / LIP_STRIP_COUNT,
+        )
+        const regionRight =
+          stripIndex === LIP_STRIP_COUNT - 1
+            ? stripRight
+            : Math.floor(stripX + (boundedStripWidth * (stripIndex + 1)) / LIP_STRIP_COUNT)
+        const regionWidth = regionRight - regionX
+
+        if (regionWidth <= 0) {
+          return null
+        }
+
+        const { data } = calibrationContext.getImageData(
+          regionX,
+          stripY,
+          regionWidth,
+          boundedStripHeight,
+        )
+        const stripAverage = getHsvAverageFromPixelData(data)
+
+        if (!stripAverage) {
+          return null
+        }
+
+        stripAverages.push(stripAverage)
+      }
+
+      return stripAverages
+    }
+
+    function sampleLipStrip() {
+      const lipStripAverages = getLipStripHsvAverages()
+
+      if (!lipStripAverages) {
         return
       }
 
-      const frameHueAverage =
-        ((Math.atan2(hueYTotal / pixelCount, hueXTotal / pixelCount) * 180) / Math.PI +
-          360) %
-        360
-      const frameSaturationAverage = saturationTotal / pixelCount
-
-      updateCalibrationAverage(frameHueAverage, frameSaturationAverage)
+      updateCalibrationAverages(lipStripAverages)
     }
 
     function startCalibration() {
-      hueAverage = null
-      saturationAverage = null
+      lipStripCalibrationAverages = Array.from({ length: LIP_STRIP_COUNT }, () => null)
+      sustainedCounterMs = 0
+      chewingCooldownUntil = 0
+      isCalibrationComplete = false
       setCalibrationSecondsLeft(3)
       sampleLipStrip()
 
@@ -258,7 +414,10 @@ function App() {
         }
 
         setCalibrationSecondsLeft(null)
-        console.log('Calibration complete', { hueAverage, saturationAverage })
+        isCalibrationComplete = lipStripCalibrationAverages.every(
+          (calibrationAverage) => calibrationAverage !== null,
+        )
+        // console.log('Calibration complete', { lipStripCalibrationAverages })
       }, 3000)
     }
 
