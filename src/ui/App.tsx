@@ -18,6 +18,57 @@ const FINGERTIP_LANDMARK_INDICES = [4, 8, 12, 16, 20]
 
 let latestFaceLandmarks: NormalizedLandmark[] | null = null
 let latestHandLandmarks: NormalizedLandmark[][] | null = null
+let hueAverage: number | null = null
+let saturationAverage: number | null = null
+
+function rgbaToHsv(red: number, green: number, blue: number) {
+  const normalizedRed = red / 255
+  const normalizedGreen = green / 255
+  const normalizedBlue = blue / 255
+  const max = Math.max(normalizedRed, normalizedGreen, normalizedBlue)
+  const min = Math.min(normalizedRed, normalizedGreen, normalizedBlue)
+  const delta = max - min
+  let hue = 0
+
+  if (delta !== 0) {
+    if (max === normalizedRed) {
+      hue = 60 * (((normalizedGreen - normalizedBlue) / delta) % 6)
+    } else if (max === normalizedGreen) {
+      hue = 60 * ((normalizedBlue - normalizedRed) / delta + 2)
+    } else {
+      hue = 60 * ((normalizedRed - normalizedGreen) / delta + 4)
+    }
+  }
+
+  if (hue < 0) {
+    hue += 360
+  }
+
+  return {
+    hue,
+    saturation: max === 0 ? 0 : delta / max,
+    value: max,
+  }
+}
+
+function averageHue(firstHue: number, secondHue: number) {
+  const firstRadians = (firstHue * Math.PI) / 180
+  const secondRadians = (secondHue * Math.PI) / 180
+  const x = Math.cos(firstRadians) + Math.cos(secondRadians)
+  const y = Math.sin(firstRadians) + Math.sin(secondRadians)
+  const average = (Math.atan2(y, x) * 180) / Math.PI
+
+  return average < 0 ? average + 360 : average
+}
+
+function updateCalibrationAverage(frameHueAverage: number, frameSaturationAverage: number) {
+  hueAverage =
+    hueAverage === null ? frameHueAverage : averageHue(hueAverage, frameHueAverage)
+  saturationAverage =
+    saturationAverage === null
+      ? frameSaturationAverage
+      : (saturationAverage + frameSaturationAverage) / 2
+}
 
 function onFaceResult(result: FaceLandmarkerResult) {
   latestFaceLandmarks = result.faceLandmarks[0] ?? null
@@ -30,13 +81,18 @@ function onHandResult(result: HandLandmarkerResult) {
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const calibrationCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null)
   const handLandmarkerRef = useRef<HandLandmarker | null>(null)
   const [status, setStatus] = useState('')
+  const [calibrationSecondsLeft, setCalibrationSecondsLeft] = useState<number | null>(null)
 
   useEffect(() => {
     let stream: MediaStream | undefined
     let animationFrameId: number | undefined
+    let calibrationIntervalId: number | undefined
+    let calibrationTimeoutId: number | undefined
+    let calibrationCountdownIntervalId: number | undefined
     const drawIntervalId = window.setInterval(() => {
       const canvas = canvasRef.current
       const video = videoRef.current
@@ -92,8 +148,119 @@ function App() {
           }
         }
       }
-    }, 500)
+    }, 250)
     let isCancelled = false
+
+    function sampleLipStrip() {
+      const video = videoRef.current
+      const faceLandmarks = latestFaceLandmarks
+
+      if (!video || !faceLandmarks) {
+        return
+      }
+
+      const upperLip = faceLandmarks[13]
+      const lowerLip = faceLandmarks[14]
+      const videoWidth = video.videoWidth
+      const videoHeight = video.videoHeight
+
+      if (!upperLip || !lowerLip || videoWidth === 0 || videoHeight === 0) {
+        return
+      }
+
+      const calibrationCanvas =
+        calibrationCanvasRef.current ?? document.createElement('canvas')
+      calibrationCanvasRef.current = calibrationCanvas
+      calibrationCanvas.width = videoWidth
+      calibrationCanvas.height = videoHeight
+
+      const calibrationContext = calibrationCanvas.getContext('2d', {
+        willReadFrequently: true,
+      })
+
+      if (!calibrationContext) {
+        return
+      }
+
+      calibrationContext.drawImage(video, 0, 0, videoWidth, videoHeight)
+
+      const upperLipX = upperLip.x * videoWidth
+      const upperLipY = upperLip.y * videoHeight
+      const lowerLipX = lowerLip.x * videoWidth
+      const lowerLipY = lowerLip.y * videoHeight
+      const centerX = (upperLipX + lowerLipX) / 2
+      const centerY = (upperLipY + lowerLipY) / 2
+      const lipDistance = Math.hypot(lowerLipX - upperLipX, lowerLipY - upperLipY)
+      const stripWidth = Math.max(12, lipDistance * 4)
+      const stripHeight = Math.max(4, Math.abs(lowerLipY - upperLipY) + 4)
+      const stripX = Math.max(0, Math.floor(centerX - stripWidth / 2))
+      const stripY = Math.max(0, Math.floor(centerY - stripHeight / 2))
+      const boundedStripWidth = Math.min(videoWidth - stripX, Math.ceil(stripWidth))
+      const boundedStripHeight = Math.min(videoHeight - stripY, Math.ceil(stripHeight))
+
+      if (boundedStripWidth <= 0 || boundedStripHeight <= 0) {
+        return
+      }
+
+      const { data } = calibrationContext.getImageData(
+        stripX,
+        stripY,
+        boundedStripWidth,
+        boundedStripHeight,
+      )
+      let hueXTotal = 0
+      let hueYTotal = 0
+      let saturationTotal = 0
+      let pixelCount = 0
+
+      for (let index = 0; index < data.length; index += 4) {
+        const { hue, saturation } = rgbaToHsv(data[index], data[index + 1], data[index + 2])
+        const hueRadians = (hue * Math.PI) / 180
+
+        hueXTotal += Math.cos(hueRadians)
+        hueYTotal += Math.sin(hueRadians)
+        saturationTotal += saturation
+        pixelCount += 1
+      }
+
+      if (pixelCount === 0) {
+        return
+      }
+
+      const frameHueAverage =
+        ((Math.atan2(hueYTotal / pixelCount, hueXTotal / pixelCount) * 180) / Math.PI +
+          360) %
+        360
+      const frameSaturationAverage = saturationTotal / pixelCount
+
+      updateCalibrationAverage(frameHueAverage, frameSaturationAverage)
+    }
+
+    function startCalibration() {
+      hueAverage = null
+      saturationAverage = null
+      setCalibrationSecondsLeft(3)
+      sampleLipStrip()
+
+      calibrationIntervalId = window.setInterval(sampleLipStrip, 250)
+      calibrationCountdownIntervalId = window.setInterval(() => {
+        setCalibrationSecondsLeft((secondsLeft) =>
+          secondsLeft === null ? null : Math.max(1, secondsLeft - 1),
+        )
+      }, 1000)
+      calibrationTimeoutId = window.setTimeout(() => {
+        if (calibrationIntervalId !== undefined) {
+          clearInterval(calibrationIntervalId)
+        }
+
+        if (calibrationCountdownIntervalId !== undefined) {
+          clearInterval(calibrationCountdownIntervalId)
+        }
+
+        setCalibrationSecondsLeft(null)
+        console.log('Calibration complete', { hueAverage, saturationAverage })
+      }, 3000)
+    }
 
     async function initializeMediaPipe() {
       const vision = await FilesetResolver.forVisionTasks(WASM_FILES_URL)
@@ -141,6 +308,7 @@ function App() {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
         startDetectionLoop()
+        startCalibration()
       } catch {
         setStatus('Camera access required')
       }
@@ -176,6 +344,18 @@ function App() {
         cancelAnimationFrame(animationFrameId)
       }
 
+      if (calibrationIntervalId !== undefined) {
+        clearInterval(calibrationIntervalId)
+      }
+
+      if (calibrationTimeoutId !== undefined) {
+        clearTimeout(calibrationTimeoutId)
+      }
+
+      if (calibrationCountdownIntervalId !== undefined) {
+        clearInterval(calibrationCountdownIntervalId)
+      }
+
       clearInterval(drawIntervalId)
       stream?.getTracks().forEach((track) => track.stop())
       faceLandmarkerRef.current?.close()
@@ -198,6 +378,16 @@ function App() {
           id="canvas"
           className="pointer-events-none absolute inset-0 h-full w-full"
         ></canvas>
+        {calibrationSecondsLeft !== null && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-center text-white">
+            <div className="text-5xl font-semibold tabular-nums">
+              {calibrationSecondsLeft}
+            </div>
+            <div className="mt-3 text-lg font-medium">
+              Calibrating, please keep mouth closed
+            </div>
+          </div>
+        )}
       </div>
       <div className="status min-h-6 text-sm text-red-300">{status}</div>
     </main>
