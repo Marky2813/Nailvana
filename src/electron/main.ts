@@ -14,6 +14,10 @@ app.on('ready', () => {
     callback(permission === 'media');
   });
 
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    return permission === 'media';
+  });
+
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: getPreloadPath(), 
