@@ -1,7 +1,7 @@
 {
   "appId": "com.narulasarthak.catchchew", 
   "productName": "CatchChew",
-  "extraResources": ["dist-electron/preload.cjs"],
+  "extraResources": ["dist-electron/preload.cjs", "app.png"],
   "files": [
     "dist-electron/**/*",
     "dist-react/**/*"],
