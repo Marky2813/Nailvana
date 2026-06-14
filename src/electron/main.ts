@@ -6,6 +6,7 @@ import { getPreloadPath } from './pathResolver.js'
 const gotLock = app.requestSingleInstanceLock()
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
+let isQuitting = false
 
 function getTrayIconPath() {
   return isDev()
@@ -18,7 +19,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function getPopupPosition() {
-  if (!tray || !mainWindow) {
+  if (!tray || !mainWindow || mainWindow.isDestroyed()) {
     return { x: 0, y: 0 }
   }
 
@@ -45,6 +46,10 @@ if (!gotLock) {
 } else {
   app.on('window-all-closed', () => {})
 
+  app.on('before-quit', () => {
+    isQuitting = true
+  })
+
   app.on('ready', () => {
     session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
       callback(permission === 'media')
@@ -57,11 +62,11 @@ if (!gotLock) {
 
     const popupWindow = new BrowserWindow({
       width: 350,
-      height: 452,
+      height: 490,
       minWidth: 350,
-      minHeight: 452,
+      minHeight: 490,
       maxWidth: 350,
-      maxHeight: 452,
+      maxHeight: 490,
       show: false,
       frame: false,
       resizable: false,
@@ -75,7 +80,7 @@ if (!gotLock) {
     mainWindow = popupWindow
 
     tray.on('click', () => {
-      if (!mainWindow) {
+      if (!mainWindow || mainWindow.isDestroyed()) {
         return
       }
 
@@ -88,6 +93,15 @@ if (!gotLock) {
       mainWindow.setPosition(x, y)
       mainWindow.show()
       mainWindow.focus()
+    })
+
+    popupWindow.on('close', (event) => {
+      if (isQuitting) {
+        return
+      }
+
+      event.preventDefault()
+      popupWindow.hide()
     })
 
     popupWindow.on('blur', () => popupWindow.hide())
