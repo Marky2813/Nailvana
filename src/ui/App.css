@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
+
 .nailvana-shell {
   width: 350px;
   height: 452px;
@@ -75,11 +76,18 @@
   letter-spacing: 0;
 }
 
-.status-dot {
+.status-dot-active {
   width: 8px;
   height: 8px;
   border-radius: 999px;
   background: #21e600;
+}
+
+.status-dot-inactive {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ff5c00;  
 }
 
 .footer-copy {

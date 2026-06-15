@@ -3,6 +3,10 @@ import './App.css'
 import { CameraView } from '../components/CameraView'
 import { useChewingDetection } from '../hooks/useChewingDetection'
 import nailvanalogo from './assets/Nailvana.png'
+import Box from '@mui/material/Box';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
 
 const CATCH_STORAGE_KEY = 'nailvana:catches'
 
@@ -69,8 +73,12 @@ function App() {
   const { videoRef, canvasRef, triggerMessage, debugMetrics } = useChewingDetection()
   const [catchCount, setCatchCount] = useState(() => loadDailyCatches())
   const previousTriggerRef = useRef<string | null>(null)
-  const isActive = debugMetrics.phase === 'monitoring' || debugMetrics.phase === 'triggered'
   const position = getPositionLabel(debugMetrics.trackingValid, debugMetrics.trackingIssue)
+  const [status, setStatus] = useState('Active');
+
+  const handleChange = (event: SelectChangeEvent) => {
+    setStatus(event.target.value as string);
+  };
 
   useEffect(() => {
     const wasIdle = previousTriggerRef.current === null
@@ -98,25 +106,49 @@ function App() {
         <img src={nailvanalogo} alt="Nailvana Logo" className="brand-logo mt-3 -ml-3 -mr-4" />
         <div className="brand-title mt-2">Nailvana</div>
       </div>
-    <div className="algin-center flex flex-col items-center">
-      <section className="metrics-panel flex flex-col items-center text-center">
-        <div className="mt-[18px] metric-label">Status</div>
-        <div className="mt-[8px] flex items-center justify-center gap-[9px]">
-          <span className="status-dot"></span>
-          <span className="metric-value">{isActive ? 'Active' : 'Starting'}</span>
-        </div>
+      <div className="algin-center flex flex-col items-center">
+        <section className="metrics-panel flex flex-col items-center text-center">
+          <div className="mt-[18px] metric-label -mb-7">Status</div>
+          <div className="mt-[8px] flex items-center justify-center gap-[9px]">
+            <Box sx={{ 
+              minWidth: 120,
+              height: 30,
+              padding: 0, 
+              margin: 1.3}}>
+              <FormControl fullWidth>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={status}
+                  label="Status"
+                  onChange={handleChange}
+                  sx = {{
+                    "& .MuiOutlinedInput-notchedOutline": {
+      border: "none",
+    },
+                  }}
+                >
+                  <MenuItem value="Active"><span className="status-dot-active mr-2" ></span>
+                    <span className="metric-value">Active</span></MenuItem>
+                  <MenuItem value="Inactive"><span className="status-dot-inactive mr-2" ></span>
+                    <span className="metric-value">Inactive</span></MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
-        <div className="mt-[18px] metric-label">Catches</div>
-        <div className="mt-[8px] metric-value">{catchCount}</div>
+          </div>
 
-        <div className="mt-[18px] metric-label">Position</div>
-        <div className="mt-[8px] metric-value">{position}</div>
+          <div className="mt-[18px] metric-label">Catches</div>
+          <div className="mt-[8px] metric-value">{catchCount}</div>
 
-        <div className="mt-[22px] footer-copy">
-          Please stay centered in the frame with constant lighting to ensure accurate tracking.
-        </div>
-      </section>
-    </div>
+          <div className="mt-[18px] metric-label">Position</div>
+          <div className="mt-[8px] metric-value">{position}</div>
+
+          <div className="mt-[22px] footer-copy">
+            Please stay centered in the frame with constant lighting to ensure accurate tracking.
+          </div>
+        </section>
+      </div>
     </main>
   )
 }
