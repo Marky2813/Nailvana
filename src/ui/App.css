@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
-
 .nailvana-shell {
   width: 350px;
   height: 452px;
@@ -20,6 +18,43 @@
   background: #111;
 }
 
+.sleeping-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ff5c00;
+  color: #fff;
+  text-align: center;
+}
+
+.sleep-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.sleeping-title {
+  font-family: 'Hanken Grotesk', Inter, system-ui, sans-serif;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.sleeping-copy {
+  margin-top: 7px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .metrics-panel {
   position: absolute;
   top: 180px;
@@ -32,7 +67,7 @@
 .brand-tab {
   position: absolute;
   top: 150px;
-  z-index: 2;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 11px;

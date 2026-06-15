@@ -23,7 +23,11 @@ import { sampleMouthCropFromVideo, type MouthCropBaseline, type MouthCropSample 
 import { drawDetectionOverlay } from '../detection/overlay'
 import { INITIAL_DEBUG_METRICS, type DebugMetrics, type DetectionPhase, type DetectionReason } from '../detection/types'
 
-export function useChewingDetection() {
+type UseChewingDetectionOptions = {
+  enabled?: boolean
+}
+
+export function useChewingDetection({ enabled = true }: UseChewingDetectionOptions = {}) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sampleCanvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -52,6 +56,44 @@ export function useChewingDetection() {
   useEffect(() => unlockAlertAudioOnInteraction(), [])
 
   useEffect(() => {
+    if (!enabled) {
+      const canvas = canvasRef.current
+      const video = videoRef.current
+      const resetTimeoutId = window.setTimeout(() => {
+        setStatus('Inactive')
+        setCalibrationSecondsLeft(null)
+        setTriggerMessage(null)
+        updateDebugMetrics({
+          ...INITIAL_DEBUG_METRICS,
+          trackingIssue: 'inactive',
+        })
+      }, 0)
+
+      phaseRef.current = 'initializing'
+      startCalibrationRef.current = null
+      latestFaceLandmarksRef.current = null
+      latestHandLandmarksRef.current = []
+      baselineRef.current = null
+      calibrationSamplesRef.current = []
+      mouthDistanceHistoryRef.current = []
+      consecutiveContactSamplesRef.current = 0
+      consecutiveMotionSamplesRef.current = 0
+      consecutiveHandMouthSamplesRef.current = 0
+
+      if (video) {
+        video.pause()
+        video.srcObject = null
+      }
+
+      const context = canvas?.getContext('2d')
+      context?.clearRect(0, 0, canvas?.width ?? 0, canvas?.height ?? 0)
+
+      return () => {
+        clearTimeout(resetTimeoutId)
+      }
+    }
+
+    const cleanupVideo = videoRef.current
     let stream: MediaStream | undefined
     let animationFrameId: number | undefined
     let sampleIntervalId: number | undefined
@@ -448,12 +490,22 @@ export function useChewingDetection() {
       }
 
       stream?.getTracks().forEach((track) => track.stop())
+      if (cleanupVideo && cleanupVideo.srcObject === stream) {
+        cleanupVideo.srcObject = null
+      }
       faceLandmarkerRef.current?.close()
       handLandmarkerRef.current?.close()
+      faceLandmarkerRef.current = null
+      handLandmarkerRef.current = null
     }
-  }, [updateDebugMetrics])
+  }, [enabled, updateDebugMetrics])
 
   async function recalibrate() {
+    if (!enabled) {
+      setStatus('Inactive')
+      return
+    }
+
     if (latestFaceLandmarksRef.current === null) {
       setStatus('No face detected — position yourself in frame and try again')
       return

@@ -3,10 +3,10 @@ import './App.css'
 import { CameraView } from '../components/CameraView'
 import { useChewingDetection } from '../hooks/useChewingDetection'
 import nailvanalogo from './assets/Nailvana.png'
-import Box from '@mui/material/Box';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, { type SelectChangeEvent } from '@mui/material/Select';
+import Box from '@mui/material/Box'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import Select, { type SelectChangeEvent } from '@mui/material/Select'
 
 const CATCH_STORAGE_KEY = 'nailvana:catches'
 
@@ -70,20 +70,25 @@ function getPositionLabel(trackingValid: boolean, trackingIssue: string | null) 
 
 
 function App() {
-  const { videoRef, canvasRef, triggerMessage, debugMetrics } = useChewingDetection()
+  const [status, setStatus] = useState('Active')
+  const isDetectionEnabled = status === 'Active'
+  const { videoRef, canvasRef, triggerMessage, debugMetrics } = useChewingDetection({
+    enabled: isDetectionEnabled,
+  })
   const [catchCount, setCatchCount] = useState(() => loadDailyCatches())
   const previousTriggerRef = useRef<string | null>(null)
-  const position = getPositionLabel(debugMetrics.trackingValid, debugMetrics.trackingIssue)
-  const [status, setStatus] = useState('Active');
+  const position = isDetectionEnabled
+    ? getPositionLabel(debugMetrics.trackingValid, debugMetrics.trackingIssue)
+    : 'Inactive'
 
   const handleChange = (event: SelectChangeEvent) => {
-    setStatus(event.target.value as string);
-  };
+    setStatus(event.target.value)
+  }
 
   useEffect(() => {
     const wasIdle = previousTriggerRef.current === null
 
-    if (triggerMessage !== null && wasIdle) {
+    if (isDetectionEnabled && triggerMessage !== null && wasIdle) {
       setCatchCount((currentCount) => {
         const nextCount = currentCount + 1
         saveDailyCatches(nextCount)
@@ -92,7 +97,7 @@ function App() {
     }
 
     previousTriggerRef.current = triggerMessage
-  }, [triggerMessage])
+  }, [isDetectionEnabled, triggerMessage])
 
   useEffect(() => {
     saveDailyCatches(catchCount)
@@ -100,7 +105,12 @@ function App() {
 
   return (
     <main className="nailvana-shell">
-      <CameraView videoRef={videoRef} canvasRef={canvasRef} triggerMessage={triggerMessage} />
+      <CameraView
+        videoRef={videoRef}
+        canvasRef={canvasRef}
+        triggerMessage={triggerMessage}
+        isSleeping={!isDetectionEnabled}
+      />
 
       <div className="brand-tab">
         <img src={nailvanalogo} alt="Nailvana Logo" className="brand-logo mt-3 -ml-3 -mr-4" />
@@ -114,7 +124,7 @@ function App() {
               minWidth: 120,
               height: 30,
               padding: 0, 
-              margin: 1.3}}>
+              margin: 1.3 }}>
               <FormControl fullWidth>
                 <Select
                   labelId="demo-simple-select-label"
@@ -122,10 +132,10 @@ function App() {
                   value={status}
                   label="Status"
                   onChange={handleChange}
-                  sx = {{
-                    "& .MuiOutlinedInput-notchedOutline": {
-      border: "none",
-    },
+                  sx={{
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      border: 'none',
+                    },
                   }}
                 >
                   <MenuItem value="Active"><span className="status-dot-active mr-2" ></span>

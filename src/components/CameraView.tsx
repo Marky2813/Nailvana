@@ -1,12 +1,15 @@
 import type { RefObject } from 'react'
+import sleepicon from '../ui/assets/sleep.png'
 
 type CameraViewProps = {
   videoRef: RefObject<HTMLVideoElement | null>
   canvasRef: RefObject<HTMLCanvasElement | null>
   triggerMessage: string | null
+  isSleeping: boolean
 }
 
-export function CameraView({ videoRef, canvasRef, triggerMessage }: CameraViewProps) {
+
+export function CameraView({ videoRef, canvasRef, triggerMessage, isSleeping }: CameraViewProps) {
   return (
     <div className="webcam-panel">
       <video
@@ -20,6 +23,14 @@ export function CameraView({ videoRef, canvasRef, triggerMessage }: CameraViewPr
         id="canvas"
         className="pointer-events-none absolute inset-0 h-full w-full"
       ></canvas>
+      {isSleeping && (
+        <div className="sleeping-panel">
+          {/* <SleepIcon /> */}
+          <img src={sleepicon} alt="Sleeping Icon" className="h-5 w-5 mb-2" />  
+          <div className="sleeping-title">Nailvana is sleeping</div>
+          <div className="sleeping-copy">Camera off. Rest easy.</div>
+        </div>
+      )}
       {triggerMessage !== null && (
         <div className="stop-biting-popup">
           <div>Stop biting</div>
