@@ -10,8 +10,10 @@ type CameraViewProps = {
 
 
 export function CameraView({ videoRef, canvasRef, triggerMessage, isSleeping }: CameraViewProps) {
+  const biteDetected = triggerMessage !== null
+
   return (
-    <div className="webcam-panel">
+    <div className={`webcam-panel${biteDetected ? ' bite-detected' : ''}`}>
       <video
         ref={videoRef}
         className="h-full w-full object-cover"
@@ -29,11 +31,6 @@ export function CameraView({ videoRef, canvasRef, triggerMessage, isSleeping }: 
           <img src={sleepicon} alt="Sleeping Icon" className="h-5 w-5 mb-2" />  
           <div className="sleeping-title">Nailvana is sleeping</div>
           <div className="sleeping-copy">Camera off. Rest easy.</div>
-        </div>
-      )}
-      {triggerMessage !== null && (
-        <div className="stop-biting-popup">
-          <div>Stop biting</div>
         </div>
       )}
     </div>
