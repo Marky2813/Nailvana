@@ -150,11 +150,12 @@ function App() {
 
           <div className="mt-[18px] metric-label">Catches</div>
           <div className="mt-[8px] metric-value">{catchCount}</div>
+          <div className="mt-[2px] metric-today">Today</div>
 
           <div className="mt-[18px] metric-label">Position</div>
-          <div className="mt-[8px] metric-value">{position}</div>
+          <div className="mt-[4px] metric-value ">{position}</div>
 
-          <div className="mt-[22px] footer-copy">
+          <div className="mt-[15px] footer-copy">
             Please stay centered in the frame with constant lighting to ensure accurate tracking.
           </div>
         </section>

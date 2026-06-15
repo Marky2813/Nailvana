@@ -111,6 +111,15 @@
   letter-spacing: 0;
 }
 
+.metric-today {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.12;
+  font-weight: 500;
+  color: #000;
+  letter-spacing: 0;
+}
+
 .status-dot-active {
   width: 8px;
   height: 8px;

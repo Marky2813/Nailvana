@@ -62,11 +62,11 @@ if (!gotLock) {
 
     const popupWindow = new BrowserWindow({
       width: 350,
-      height: 490,
+      height: 492,
       minWidth: 350,
-      minHeight: 490,
+      minHeight: 492,
       maxWidth: 350,
-      maxHeight: 490,
+      maxHeight: 492,
       show: false,
       frame: false,
       resizable: false,
