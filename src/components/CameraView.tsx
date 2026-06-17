@@ -33,6 +33,11 @@ export function CameraView({ videoRef, canvasRef, triggerMessage, isSleeping }: 
           <div className="sleeping-copy">Camera off. Rest easy.</div>
         </div>
       )}
+      {biteDetected && (
+        <div className="bite-alert-overlay">
+          <div>Stay calm, you've got this!</div>
+        </div>
+      )}
     </div>
   )
 }

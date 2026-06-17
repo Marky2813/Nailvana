@@ -1,7 +1,7 @@
 import type { FaceLandmarker, HandLandmarker } from '@mediapipe/tasks-vision'
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ensureAlertAudioContext, playChewingAlertSound, unlockAlertAudioOnInteraction } from '../detection/alertSound'
+import { ensureAlertAudio, playChewingAlertSound, unlockAlertAudioOnInteraction } from '../detection/alertSound'
 import {
   CALIBRATION_DURATION_MS,
   FACE_WAIT_TIMEOUT_MS,
@@ -512,7 +512,7 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
     }
 
     setStatus('')
-    await ensureAlertAudioContext()
+    await ensureAlertAudio()
     startCalibrationRef.current?.()
   }
 

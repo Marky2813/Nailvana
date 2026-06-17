@@ -1,68 +1,46 @@
-let alertAudioContext: AudioContext | null = null
+import pingSoundUrl from '../ui/assets/ping.mp3'
 
-export async function ensureAlertAudioContext() {
-  if (!alertAudioContext) {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+const ALERT_VOLUME = 0.5
+let alertAudio: HTMLAudioElement | null = null
 
-    if (!AudioContextClass) {
-      return null
-    }
-
-    alertAudioContext = new AudioContextClass()
+export async function ensureAlertAudio() {
+  if (!alertAudio) {
+    alertAudio = new Audio(pingSoundUrl)
+    alertAudio.preload = 'auto'
+    alertAudio.volume = ALERT_VOLUME
+    alertAudio.load()
   }
 
-  if (alertAudioContext.state === 'suspended') {
-    await alertAudioContext.resume()
-  }
+  alertAudio.volume = ALERT_VOLUME
 
-  return alertAudioContext
-}
-
-function playSoftChimeNote(
-  context: AudioContext,
-  frequency: number,
-  startTime: number,
-  volume: number,
-  duration: number,
-) {
-  const oscillator = context.createOscillator()
-  const gain = context.createGain()
-
-  oscillator.type = 'triangle'
-  oscillator.frequency.setValueAtTime(frequency, startTime)
-
-  gain.gain.setValueAtTime(0, startTime)
-  gain.gain.linearRampToValueAtTime(volume, startTime + 0.012)
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
-
-  oscillator.connect(gain)
-  gain.connect(context.destination)
-  oscillator.start(startTime)
-  oscillator.stop(startTime + duration + 0.05)
+  return alertAudio
 }
 
 export async function playChewingAlertSound() {
   try {
-    const context = await ensureAlertAudioContext()
-
-    if (!context || context.state !== 'running') {
-      return
-    }
-
-    const startTime = context.currentTime + 0.01
-
-    playSoftChimeNote(context, 587, startTime, 0.09, 0.2)
-    playSoftChimeNote(context, 784, startTime + 0.14, 0.08, 0.26)
+    const audio = await ensureAlertAudio()
+    audio.pause()
+    audio.currentTime = 0
+    await audio.play()
   } catch (error) {
     console.warn('Could not play chewing alert sound', error)
   }
 }
 
 export function unlockAlertAudioOnInteraction() {
-  function unlockAlertAudio() {
-    void ensureAlertAudioContext()
+  async function unlockAlertAudio() {
+    const audio = await ensureAlertAudio()
+
+    try {
+      audio.muted = true
+      await audio.play()
+      audio.pause()
+      audio.currentTime = 0
+    } catch {
+      // The next user interaction or detection trigger can try again.
+    } finally {
+      audio.muted = false
+    }
   }
 
   window.addEventListener('pointerdown', unlockAlertAudio, { once: true })

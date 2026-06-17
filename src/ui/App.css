@@ -44,6 +44,26 @@
     0 0 0 1px rgba(255, 92, 0, 0.95);
 }
 
+.bite-alert-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.64);
+  color: #fff;
+  pointer-events: none;
+}
+
+.bite-alert-overlay > div {
+  font-family: 'Hanken Grotesk', Inter, system-ui, sans-serif;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 .sleeping-panel {
   position: absolute;
   inset: 0;
