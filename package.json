@@ -21,10 +21,14 @@
       "target": "nsis"
     },
     "mac": {
-      "icon": "build/icons/icon.icns"
+      "icon": "build/icons/icon.icns",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Nailvana uses your camera to detect hand-to-mouth habits locally."
+      }
     },
     "linux": {
-      "icon": "build/icons"
+      "icon": "build/icons",
+      "target": ["AppImage"]
     }
   },
   "scripts": {
