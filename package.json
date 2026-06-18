@@ -1,9 +1,25 @@
 {
-  "name": "catchchew",
+  "name": "nailvana",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A calm, judgment-free nail-biting tracker",
+  "author": "Sarthak Narula",
   "main": "dist-electron/main.js",
   "type": "module",
+  "build": {
+    "appId": "com.sarthaknarula.nailvana",
+    "productName": "Nailvana",
+    "win": {
+      "icon": "build/icons/icon.ico",
+      "target": "nsis"
+    },
+    "mac": {
+      "icon": "build/icons/icon.icns"
+    },
+    "linux": {
+      "icon": "build/icons"
+    }
+  },
   "scripts": {
     "dev": "bun run --parallel dev:react dev:electron",
     "dev:react": "vite",
@@ -37,6 +53,7 @@
     "cross-env": "^10.1.0",
     "electron": "^42.3.3",
     "electron-builder": "^26.15.0",
+    "electron-icon-builder": "^2.0.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -45,5 +62,9 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
   }
 }

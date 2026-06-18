@@ -157,10 +157,9 @@ function showDesktopNotification(message: string) {
     }, 260)
   }, 2500)
 }
-
-app.setLoginItemSettings({
-  openAtLogin: true
-})
+if (app.isPackaged) {
+  app.setLoginItemSettings({ openAtLogin: true })
+}
 
 if (!gotLock) {
   app.quit()
