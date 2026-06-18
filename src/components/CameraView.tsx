@@ -6,10 +6,19 @@ type CameraViewProps = {
   canvasRef: RefObject<HTMLCanvasElement | null>
   triggerMessage: string | null
   isSleeping: boolean
+  isCameraLoading?: boolean
+  loadingMessage?: string
 }
 
 
-export function CameraView({ videoRef, canvasRef, triggerMessage, isSleeping }: CameraViewProps) {
+export function CameraView({
+  videoRef,
+  canvasRef,
+  triggerMessage,
+  isSleeping,
+  isCameraLoading = false,
+  loadingMessage = 'Starting camera…',
+}: CameraViewProps) {
   const biteDetected = triggerMessage !== null
 
   return (
@@ -31,6 +40,13 @@ export function CameraView({ videoRef, canvasRef, triggerMessage, isSleeping }: 
           <img src={sleepicon} alt="Sleeping Icon" className="h-5 w-5 mb-2" />  
           <div className="sleeping-title">Nailvana is sleeping</div>
           <div className="sleeping-copy">Camera off. Rest easy.</div>
+        </div>
+      )}
+      {!isSleeping && isCameraLoading && (
+        <div className="camera-loading-panel">
+          <div className="camera-loading-spinner" aria-hidden="true" />
+          <div className="sleeping-title">Waking up</div>
+          <div className="sleeping-copy">{loadingMessage}</div>
         </div>
       )}
     </div>

@@ -12,6 +12,7 @@ let notificationWindowHideTimer: NodeJS.Timeout | undefined
 let isNotificationRendererReady = false
 let pendingNotificationMessage: string | null = null
 let isQuitting = false
+let ignorePopupBlur = false
 const NOTIFICATION_WIDTH = 400
 const NOTIFICATION_HEIGHT = 86
 const TRAY_GUID = '8f3c2a1b-6d4e-4f5a-9b2c-1d0e8f7a6b5c'
@@ -56,6 +57,30 @@ function getNotificationPosition() {
     x: Math.round(displayBounds.x + displayBounds.width / 2 - NOTIFICATION_WIDTH / 2),
     y: displayBounds.y + 25,
   }
+}
+
+function toggleMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return
+  }
+
+  if (mainWindow.isVisible()) {
+    ignorePopupBlur = true
+    mainWindow.hide()
+    setTimeout(() => {
+      ignorePopupBlur = false
+    }, 200)
+    return
+  }
+
+  const { x, y } = getPopupPosition()
+  mainWindow.setPosition(x, y)
+  ignorePopupBlur = true
+  mainWindow.show()
+  mainWindow.focus()
+  setTimeout(() => {
+    ignorePopupBlur = false
+  }, 200)
 }
 
 function loadRenderer(window: BrowserWindow, hash?: string) {
@@ -191,7 +216,7 @@ if (!gotLock) {
       minHeight: 492,
       maxWidth: 350,
       maxHeight: 492,
-      show: true,
+      show: false,
       frame: false,
       resizable: false,
       transparent: true,
@@ -202,6 +227,14 @@ if (!gotLock) {
       },
     })
     mainWindow = popupWindow
+
+    popupWindow.once('ready-to-show', () => {
+      const { x, y } = getPopupPosition()
+      popupWindow.setPosition(x, y)
+      popupWindow.show()
+      popupWindow.focus()
+    })
+
     notificationWindow = createNotificationWindow()
 
     ipcMain.on('desktop-notification:fire', (_event, message: string) => {
@@ -219,19 +252,7 @@ if (!gotLock) {
     })
 
     tray.on('click', () => {
-      if (!mainWindow || mainWindow.isDestroyed()) {
-        return
-      }
-
-      if (mainWindow.isVisible()) {
-        mainWindow.hide()
-        return
-      }
-
-      const { x, y } = getPopupPosition()
-      mainWindow.setPosition(x, y)
-      mainWindow.show()
-      mainWindow.focus()
+      toggleMainWindow()
     })
 
     popupWindow.on('close', (event) => {
@@ -243,7 +264,13 @@ if (!gotLock) {
       popupWindow.hide()
     })
 
-    popupWindow.on('blur', () => popupWindow.hide())
+    popupWindow.on('blur', () => {
+      if (ignorePopupBlur) {
+        return
+      }
+
+      popupWindow.hide()
+    })
 
     loadRenderer(popupWindow)
   })

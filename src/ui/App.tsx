@@ -80,9 +80,10 @@ function getBiteNotificationMessage(triggerMessage: string | null) {
 function App() {
   const [status, setStatus] = useState('Active')
   const isDetectionEnabled = status === 'Active'
-  const { videoRef, canvasRef, triggerMessage, debugMetrics } = useChewingDetection({
-    enabled: isDetectionEnabled,
-  })
+  const { videoRef, canvasRef, triggerMessage, debugMetrics, status: cameraStatus, isCameraReady } =
+    useChewingDetection({
+      enabled: isDetectionEnabled,
+    })
   const [catchCount, setCatchCount] = useState(() => loadDailyCatches())
   const previousTriggerRef = useRef<string | null>(null)
   const position = isDetectionEnabled
@@ -126,6 +127,8 @@ function App() {
         canvasRef={canvasRef}
         triggerMessage={triggerMessage}
         isSleeping={!isDetectionEnabled}
+        isCameraLoading={isDetectionEnabled && !isCameraReady}
+        loadingMessage={cameraStatus || 'Starting camera…'}
       />
       {biteNotificationMessage !== null && (
         <div className="bite-notification" role="status" aria-live="polite">

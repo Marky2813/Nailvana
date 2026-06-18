@@ -45,6 +45,7 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
   const startCalibrationRef = useRef<(() => void) | null>(null)
 
   const [status, setStatus] = useState('')
+  const [isCameraReady, setIsCameraReady] = useState(false)
   const [calibrationSecondsLeft, setCalibrationSecondsLeft] = useState<number | null>(null)
   const [triggerMessage, setTriggerMessage] = useState<string | null>(null)
   const [debugMetrics, setDebugMetrics] = useState<DebugMetrics>(INITIAL_DEBUG_METRICS)
@@ -61,6 +62,7 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
       const video = videoRef.current
       const resetTimeoutId = window.setTimeout(() => {
         setStatus('Inactive')
+        setIsCameraReady(false)
         setCalibrationSecondsLeft(null)
         setTriggerMessage(null)
         updateDebugMetrics({
@@ -101,6 +103,8 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
     let calibrationCountdownIntervalId: number | undefined
     let triggerResetTimeoutId: number | undefined
     let isCancelled = false
+
+    setIsCameraReady(false)
 
     function drawCurrentOverlay(
       mouthRect: Parameters<typeof drawDetectionOverlay>[0]['mouthRect'],
@@ -423,6 +427,8 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
           return
         }
 
+        setIsCameraReady(true)
+
         startDetectionLoop()
         startSamplingLoop()
 
@@ -455,6 +461,13 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
           setStatus('Camera permission denied — allow camera access and restart')
         } else if (message.toLowerCase().includes('found') || message.includes('model')) {
           setStatus(`Model load failed — check your internet connection (${message})`)
+        } else if (
+          message.toLowerCase().includes('device in use') ||
+          message.toLowerCase().includes('in use') ||
+          message.toLowerCase().includes('notreadable') ||
+          message.toLowerCase().includes('could not start video')
+        ) {
+          setStatus('Camera in use')
         } else {
           setStatus(`Startup failed: ${message}`)
         }
@@ -520,6 +533,7 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
     videoRef,
     canvasRef,
     status,
+    isCameraReady,
     calibrationSecondsLeft,
     triggerMessage,
     debugMetrics,
