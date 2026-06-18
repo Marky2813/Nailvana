@@ -14,6 +14,7 @@ let pendingNotificationMessage: string | null = null
 let isQuitting = false
 const NOTIFICATION_WIDTH = 400
 const NOTIFICATION_HEIGHT = 86
+const TRAY_GUID = '8f3c2a1b-6d4e-4f5a-9b2c-1d0e8f7a6b5c'
 
 function getTrayIconPath() {
   return isDev()
@@ -178,7 +179,10 @@ if (!gotLock) {
       return permission === 'media'
     })
 
-    tray = new Tray(getTrayIconPath())
+    tray =
+      process.platform === 'win32'
+        ? new Tray(getTrayIconPath(), TRAY_GUID)
+        : new Tray(getTrayIconPath())
 
     const popupWindow = new BrowserWindow({
       width: 350,

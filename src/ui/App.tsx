@@ -119,7 +119,8 @@ function App() {
   }, [catchCount])
 
   return (
-    <main className="nailvana-shell">
+    <div className="nailvana-popup-frame">
+      <main className="nailvana-shell">
       <CameraView
         videoRef={videoRef}
         canvasRef={canvasRef}
@@ -182,6 +183,7 @@ function App() {
         </section>
       </div>
     </main>
+    </div>
   )
 }
 
