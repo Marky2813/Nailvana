@@ -41,7 +41,6 @@ export function isHandNearMouth(
     }),
   )
 }
-
 export function isHandTouchingHead(
   handLandmarks: NormalizedLandmark[][],
   faceLandmarks: NormalizedLandmark[],
@@ -84,3 +83,4 @@ export function isHandTouchingHead(
     }),
   )
 }
+
