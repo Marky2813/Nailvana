@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen, session, Tray } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, session, Tray } from 'electron'
 import path from 'path'
 import { isDev } from './utils.js'
 import { getPreloadPath } from './pathResolver.js'
@@ -6,7 +6,14 @@ import { getPreloadPath } from './pathResolver.js'
 const gotLock = app.requestSingleInstanceLock()
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
+let notificationWindow: BrowserWindow | null = null
+let notificationHideTimer: NodeJS.Timeout | undefined
+let notificationWindowHideTimer: NodeJS.Timeout | undefined
+let isNotificationRendererReady = false
+let pendingNotificationMessage: string | null = null
 let isQuitting = false
+const NOTIFICATION_WIDTH = 400
+const NOTIFICATION_HEIGHT = 86
 
 function getTrayIconPath() {
   return isDev()
@@ -41,6 +48,120 @@ function getPopupPosition() {
   }
 }
 
+function getNotificationPosition() {
+  const displayBounds = screen.getPrimaryDisplay().bounds
+
+  return {
+    x: Math.round(displayBounds.x + displayBounds.width / 2 - NOTIFICATION_WIDTH / 2),
+    y: displayBounds.y + 25,
+  }
+}
+
+function loadRenderer(window: BrowserWindow, hash?: string) {
+  if (isDev()) {
+    window.loadURL(`http://localhost:5123${hash ? `/#${hash}` : ''}`)
+    return
+  }
+
+  window.loadFile(path.join(app.getAppPath(), '/dist-react/index.html'), { hash })
+}
+
+function createNotificationWindow() {
+  const { x, y } = getNotificationPosition()
+  const window = new BrowserWindow({
+    width: NOTIFICATION_WIDTH,
+    height: NOTIFICATION_HEIGHT,
+    x,
+    y,
+    show: false,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    resizable: false,
+    movable: false,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: getPreloadPath(),
+      backgroundThrottling: false,
+    },
+  })
+
+  window.setIgnoreMouseEvents(true)
+
+  if (process.platform === 'darwin') {
+    window.setAlwaysOnTop(true, 'screen-saver')
+    window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  }
+
+  window.on('closed', () => {
+    notificationWindow = null
+    isNotificationRendererReady = false
+  })
+
+  loadRenderer(window, 'desktop-notification')
+  return window
+}
+
+function sendDesktopNotificationShow(window: BrowserWindow, message: string) {
+  if (!isNotificationRendererReady) {
+    pendingNotificationMessage = message
+    return
+  }
+
+  pendingNotificationMessage = null
+  window.webContents.send('desktop-notification:show', message)
+}
+
+function showDesktopNotification(message: string) {
+  if (!notificationWindow || notificationWindow.isDestroyed()) {
+    notificationWindow = createNotificationWindow()
+  }
+
+  const window = notificationWindow
+  const { x, y } = getNotificationPosition()
+
+  if (notificationHideTimer !== undefined) {
+    clearTimeout(notificationHideTimer)
+  }
+
+  if (notificationWindowHideTimer !== undefined) {
+    clearTimeout(notificationWindowHideTimer)
+  }
+
+  window.setPosition(x, y)
+
+  if (process.platform === 'darwin') {
+    window.setAlwaysOnTop(true, 'screen-saver')
+  } else {
+    window.setAlwaysOnTop(true)
+  }
+
+  window.showInactive()
+  sendDesktopNotificationShow(window, message)
+
+  notificationHideTimer = setTimeout(() => {
+    if (!notificationWindow || notificationWindow.isDestroyed()) {
+      return
+    }
+
+    notificationWindow.webContents.send('desktop-notification:hide')
+    notificationWindowHideTimer = setTimeout(() => {
+      if (!notificationWindow || notificationWindow.isDestroyed()) {
+        return
+      }
+
+      notificationWindow.hide()
+    }, 260)
+  }, 2500)
+}
+
+app.setLoginItemSettings({
+  openAtLogin: true
+})
+
 if (!gotLock) {
   app.quit()
 } else {
@@ -67,7 +188,7 @@ if (!gotLock) {
       minHeight: 492,
       maxWidth: 350,
       maxHeight: 492,
-      show: false,
+      show: true,
       frame: false,
       resizable: false,
       transparent: true,
@@ -78,6 +199,21 @@ if (!gotLock) {
       },
     })
     mainWindow = popupWindow
+    notificationWindow = createNotificationWindow()
+
+    ipcMain.on('desktop-notification:fire', (_event, message: string) => {
+      showDesktopNotification(message)
+    })
+    ipcMain.on('desktop-notification:ready', () => {
+      isNotificationRendererReady = true
+
+      if (!notificationWindow || notificationWindow.isDestroyed() || pendingNotificationMessage === null) {
+        return
+      }
+
+      notificationWindow.webContents.send('desktop-notification:show', pendingNotificationMessage)
+      pendingNotificationMessage = null
+    })
 
     tray.on('click', () => {
       if (!mainWindow || mainWindow.isDestroyed()) {
@@ -106,10 +242,6 @@ if (!gotLock) {
 
     popupWindow.on('blur', () => popupWindow.hide())
 
-    if (isDev()) {
-      popupWindow.loadURL('http://localhost:5123')
-    } else {
-      popupWindow.loadFile(path.join(app.getAppPath(), '/dist-react/index.html'))
-    }
+    loadRenderer(popupWindow)
   })
 }

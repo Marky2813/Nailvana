@@ -68,6 +68,14 @@ function getPositionLabel(trackingValid: boolean, trackingIssue: string | null) 
   return 'Not in frame'
 }
 
+function getBiteNotificationMessage(triggerMessage: string | null) {
+  if (triggerMessage === null) {
+    return null
+  }
+
+  return "Take a breath, you've got this"
+}
+
 
 function App() {
   const [status, setStatus] = useState('Active')
@@ -80,6 +88,7 @@ function App() {
   const position = isDetectionEnabled
     ? getPositionLabel(debugMetrics.trackingValid, debugMetrics.trackingIssue)
     : 'Inactive'
+  const biteNotificationMessage = getBiteNotificationMessage(triggerMessage)
 
   const handleChange = (event: SelectChangeEvent) => {
     setStatus(event.target.value)
@@ -89,6 +98,12 @@ function App() {
     const wasIdle = previousTriggerRef.current === null
 
     if (isDetectionEnabled && triggerMessage !== null && wasIdle) {
+      const notificationMessage = getBiteNotificationMessage(triggerMessage)
+
+      if (notificationMessage !== null) {
+        window.electron?.fireNotification?.(notificationMessage)
+      }
+
       setCatchCount((currentCount) => {
         const nextCount = currentCount + 1
         saveDailyCatches(nextCount)
@@ -111,6 +126,12 @@ function App() {
         triggerMessage={triggerMessage}
         isSleeping={!isDetectionEnabled}
       />
+      {biteNotificationMessage !== null && (
+        <div className="bite-notification" role="status" aria-live="polite">
+          <span className="bite-notification-dot" />
+          <span>{biteNotificationMessage}</span>
+        </div>
+      )}
 
       <div className="brand-tab">
         <img src={nailvanalogo} alt="Nailvana Logo" className="brand-logo mt-3 -ml-3 -mr-4" />

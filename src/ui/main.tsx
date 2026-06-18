@@ -7,9 +7,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { DesktopNotification } from './DesktopNotification.tsx'
+
+const isDesktopNotification = window.location.hash === '#desktop-notification'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {isDesktopNotification ? <DesktopNotification /> : <App />}
   </StrictMode>,
 )

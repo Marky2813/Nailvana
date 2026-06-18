@@ -44,24 +44,55 @@
     0 0 0 1px rgba(255, 92, 0, 0.95);
 }
 
-.bite-alert-overlay {
+.bite-notification {
   position: absolute;
-  inset: 0;
-  z-index: 3;
+  top: 20px;
+  left: 50%;
+  z-index: 8;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.64);
-  color: #fff;
+  gap: 8px;
+  max-width: 310px;
+  min-height: 38px;
+  padding: 8px 14px 8px 11px;
+  border: 1px solid rgba(255, 92, 0, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.14),
+    0 0 20px rgba(255, 92, 0, 0.14);
+  color: #171717;
   pointer-events: none;
+  transform: translate(-50%, -8px);
+  animation: bite-notification-in 220ms ease-out forwards;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
-.bite-alert-overlay > div {
-  font-family: 'Hanken Grotesk', Inter, system-ui, sans-serif;
-  font-size: 26px;
-  line-height: 1;
-  font-weight: 400;
-  letter-spacing: 0;
+.bite-notification-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #ff5c00;
+  box-shadow: 0 0 0 4px rgba(255, 92, 0, 0.13);
+}
+
+@keyframes bite-notification-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .sleeping-panel {
