@@ -9,6 +9,13 @@
   "build": {
     "appId": "com.sarthaknarula.nailvana",
     "productName": "Nailvana",
+    "extraResources": [
+      "build/icons/64x64.png"
+    ],
+    "files": [
+      "dist-electron/**/*",
+      "dist-react/**/*"
+    ],
     "win": {
       "icon": "build/icons/icon.ico",
       "target": "nsis"
@@ -27,6 +34,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "dev:landing": "vite --config vite.landing.config.ts",
+    "build:landing": "vite build --config vite.landing.config.ts",
+    "preview:landing": "vite preview --config vite.landing.config.ts",
     "transpile:electron": "tsc --project src/electron/tsconfig.json",
     "dist:mac": "bun run transpile:electron && bun run build && electron-builder --mac --arm64",
     "dist:win": "bun run transpile:electron && bun run build && electron-builder --win --x64",

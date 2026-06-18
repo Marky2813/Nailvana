@@ -18,9 +18,11 @@ const NOTIFICATION_HEIGHT = 86
 const TRAY_GUID = '8f3c2a1b-6d4e-4f5a-9b2c-1d0e8f7a6b5c'
 
 function getTrayIconPath() {
+  const iconPath = path.join('build', 'icons', '64x64.png')
+
   return isDev()
-    ? path.join(app.getAppPath(), 'app.png')
-    : path.join(process.resourcesPath, 'app.png')
+    ? path.join(app.getAppPath(), iconPath)
+    : path.join(process.resourcesPath, iconPath)
 }
 
 function clamp(value: number, min: number, max: number) {

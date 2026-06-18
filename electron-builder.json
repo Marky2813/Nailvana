@@ -1,22 +1,26 @@
 {
-  "appId": "com.narulasarthak.catchchew", 
-  "productName": "CatchChew",
-  "extraResources": ["dist-electron/preload.cjs", "app.png"],
+  "appId": "com.sarthaknarula.nailvana",
+  "productName": "Nailvana",
+  "extraResources": ["build/icons/64x64.png"],
   "files": [
     "dist-electron/**/*",
-    "dist-react/**/*"],
-  "icon": "app.png", 
+    "dist-react/**/*"
+  ],
+  "icon": "build/icons/icon.ico",
   "mac": {
     "target": "dmg",
+    "icon": "build/icons/icon.icns",
     "extendInfo": {
-      "NSCameraUsageDescription": "CatchChew uses your camera to detect chewing habits locally."
+      "NSCameraUsageDescription": "Nailvana uses your camera to detect hand-to-mouth habits locally."
     }
   },
   "win": {
-    "target": ["portable", "msi"]
+    "target": ["portable", "msi"],
+    "icon": "build/icons/icon.ico"
   },
   "linux": {
-    "target": "AppImage", 
+    "target": "AppImage",
+    "icon": "build/icons",
     "category": "Utility"
   }
 }
