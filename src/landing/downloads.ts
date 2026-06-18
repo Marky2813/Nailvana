@@ -1,4 +1,4 @@
-export const GITHUB_REPO_URL = 'https://github.com/Marky2813/Nailavana'
+export const GITHUB_REPO_URL = 'https://github.com/Marky2813/Nailvana'
 export const RELEASES_LATEST_URL = `${GITHUB_REPO_URL}/releases/latest`
 
 /**

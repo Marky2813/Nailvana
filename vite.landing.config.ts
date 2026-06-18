@@ -9,7 +9,7 @@ function landingDevRoutes(): Plugin {
       server.middlewares.use((req, _res, next) => {
         const url = req.url?.split('?')[0] ?? ''
 
-        if (url === '/' || url === '/Nailavana' || url === '/Nailavana/') {
+        if (url === '/' || url === '/Nailvana' || url === '/Nailvana/') {
           req.url = '/landing.html'
         }
 
@@ -25,7 +25,7 @@ function landingDevRoutes(): Plugin {
 
 export default defineConfig(({ command }) => ({
   plugins: [react(), landingDevRoutes()],
-  base: command === 'serve' ? '/' : '/Nailavana/',
+  base: command === 'serve' ? '/' : '/Nailvana/',
   build: {
     outDir: 'dist-landing',
     emptyOutDir: true,

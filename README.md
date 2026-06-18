@@ -22,5 +22,5 @@ bun run dist:linux         # Linux AppImage
 
 ## Links
 
-- **Repo:** https://github.com/Marky2813/Nailavana
-- **Landing page (after deploy):** https://marky2813.github.io/Nailavana/landing.html
+- **Repo:** https://github.com/Marky2813/Nailvana
+- **Landing page (after deploy):** https://marky2813.github.io/Nailvana/landing.html
