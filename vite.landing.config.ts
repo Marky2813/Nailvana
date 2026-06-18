@@ -1,4 +1,5 @@
 import path from 'path'
+import { cpSync } from 'fs'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -23,8 +24,20 @@ function landingDevRoutes(): Plugin {
   }
 }
 
+function landingIndexAlias(): Plugin {
+  return {
+    name: 'landing-index-alias',
+    closeBundle() {
+      const outDir = path.resolve(__dirname, 'dist-landing')
+      cpSync(path.join(outDir, 'landing.html'), path.join(outDir, 'index.html'))
+    },
+  }
+}
+
 export default defineConfig(({ command }) => ({
-  plugins: [react(), landingDevRoutes()],
+  plugins: [react(), landingDevRoutes(), command === 'build' ? landingIndexAlias() : null].filter(
+    Boolean,
+  ) as Plugin[],
   base: command === 'serve' ? '/' : '/Nailvana/',
   build: {
     outDir: 'dist-landing',
@@ -36,7 +49,7 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 5124,
     strictPort: true,
-    open: '/landing.html',
+    open: '/',
   },
   preview: {
     port: 5124,

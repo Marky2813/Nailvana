@@ -7,7 +7,7 @@ Nailvana is a calm, judgment-free desktop companion for nail-biting awareness. I
 ```sh
 bun install
 bun run dev          # Electron tray app
-bun run dev:landing  # Landing page at http://localhost:5124/landing.html
+bun run dev:landing  # Landing page at http://localhost:5124/
 ```
 
 ## Build
@@ -23,4 +23,4 @@ bun run dist:linux         # Linux AppImage
 ## Links
 
 - **Repo:** https://github.com/Marky2813/Nailvana
-- **Landing page (after deploy):** https://marky2813.github.io/Nailvana/landing.html
+- **Landing page (after deploy):** https://marky2813.github.io/Nailvana/
