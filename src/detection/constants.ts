@@ -1,9 +1,3 @@
-export const WASM_FILES_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
-export const FACE_LANDMARKER_MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'
-export const HAND_LANDMARKER_MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
-
 export const HAND_TRACKING_LANDMARK_INDICES = [0, 4, 8, 12, 16, 20]
 export const FINGERTIP_LANDMARK_INDICES = [4, 8, 12, 16, 20]
 export const FACE_BOUNDS_PADDING_SCALE = 0.2

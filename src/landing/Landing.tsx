@@ -28,6 +28,10 @@ export function Landing() {
           A calm, judgment-free nail-biting companion for your desktop.
         </p>
 
+        <p className="landing-privacy">
+          Everything runs locally on your device. Your camera feed never leaves your computer.
+        </p>
+
         <div className="landing-downloads">
           <a className="landing-download-btn" href={downloadLinks.windows} rel="noopener noreferrer">
             Download for Windows
@@ -44,16 +48,16 @@ export function Landing() {
           <p className="landing-notice-title">Not signed yet</p>
           <p className="landing-notice-copy">
             Nailvana doesn&apos;t have a publisher certificate, so your system may show a security
-            warning when you install. That&apos;s expected — the app is open source and runs locally.
+            warning when you install. That&apos;s expected. The app is open source and runs locally.
             You&apos;ll need to confirm or allow the install yourself.
           </p>
           <ul className="landing-notice-list">
             <li>
               <strong>Windows:</strong> If you see &quot;Windows protected your PC&quot;, click{' '}
-              <strong>More info</strong> → <strong>Run anyway</strong>.
+              <strong>More info</strong>, then <strong>Run anyway</strong>.
             </li>
             <li>
-              <strong>macOS:</strong> Right-click the app → <strong>Open</strong> → confirm{' '}
+              <strong>macOS:</strong> Right-click the app, choose <strong>Open</strong>, then confirm{' '}
               <strong>Open</strong> on first launch.
             </li>
             <li>

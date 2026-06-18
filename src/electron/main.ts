@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, screen, session, Tray } from 'electron'
 import path from 'path'
+import { pathToFileURL } from 'url'
 import { isDev } from './utils.js'
 import { getPreloadPath } from './pathResolver.js'
 
@@ -91,7 +92,14 @@ function loadRenderer(window: BrowserWindow, hash?: string) {
     return
   }
 
-  window.loadFile(path.join(app.getAppPath(), '/dist-react/index.html'), { hash })
+  const indexPath = path.join(app.getAppPath(), 'dist-react', 'index.html')
+
+  if (hash) {
+    window.loadURL(`${pathToFileURL(indexPath).href}#${hash}`)
+    return
+  }
+
+  window.loadFile(indexPath)
 }
 
 function createNotificationWindow() {
@@ -127,6 +135,12 @@ function createNotificationWindow() {
   window.on('closed', () => {
     notificationWindow = null
     isNotificationRendererReady = false
+  })
+
+  window.webContents.on('did-finish-load', () => {
+    if (pendingNotificationMessage !== null && !window.isDestroyed()) {
+      sendDesktopNotificationShow(window, pendingNotificationMessage)
+    }
   })
 
   loadRenderer(window, 'desktop-notification')
@@ -242,10 +256,18 @@ if (!gotLock) {
     ipcMain.on('desktop-notification:fire', (_event, message: string) => {
       showDesktopNotification(message)
     })
-    ipcMain.on('desktop-notification:ready', () => {
+    ipcMain.on('desktop-notification:ready', (event) => {
+      if (!notificationWindow || notificationWindow.isDestroyed()) {
+        return
+      }
+
+      if (event.sender.id !== notificationWindow.webContents.id) {
+        return
+      }
+
       isNotificationRendererReady = true
 
-      if (!notificationWindow || notificationWindow.isDestroyed() || pendingNotificationMessage === null) {
+      if (pendingNotificationMessage === null) {
         return
       }
 

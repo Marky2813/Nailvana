@@ -460,7 +460,7 @@ export function useChewingDetection({ enabled = true }: UseChewingDetectionOptio
         if (message.toLowerCase().includes('permission')) {
           setStatus('Camera permission denied — allow camera access and restart')
         } else if (message.toLowerCase().includes('found') || message.includes('model')) {
-          setStatus(`Model load failed — check your internet connection (${message})`)
+          setStatus('Model load failed. Restart the app and try again.')
         } else if (
           message.toLowerCase().includes('device in use') ||
           message.toLowerCase().includes('in use') ||

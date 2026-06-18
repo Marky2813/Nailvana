@@ -62,11 +62,19 @@ body {
 }
 
 .landing-tagline {
-  margin: 0 0 28px;
+  margin: 0 0 12px;
   font-size: 15px;
   line-height: 1.45;
   font-weight: 400;
   color: #6b6b6b;
+}
+
+.landing-privacy {
+  margin: 0 0 28px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: #4a4a4a;
 }
 
 .landing-downloads {

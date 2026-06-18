@@ -7,7 +7,7 @@ import {
   FACE_LANDMARKER_MODEL_URL,
   HAND_LANDMARKER_MODEL_URL,
   WASM_FILES_URL,
-} from './constants'
+} from './mediapipePaths'
 
 export type MediaPipeLandmarkers = {
   faceLandmarker: FaceLandmarker
