@@ -23,7 +23,7 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
-            build-command: bun run dist:win
+            build-command: bun run transpile:electron && bun run build && bunx electron-builder --win --x64 --publish never
             artifact-glob: dist/*.exe
           - os: macos-latest
             platform: macos

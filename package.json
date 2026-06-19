@@ -9,6 +9,7 @@
   "build": {
     "appId": "com.sarthaknarula.nailvana",
     "productName": "Nailvana",
+    "publish": null,
     "extraResources": [
       "build/icons/64x64.png"
     ],
@@ -43,9 +44,9 @@
     "build:landing": "vite build --config vite.landing.config.ts",
     "preview:landing": "vite preview --config vite.landing.config.ts",
     "transpile:electron": "tsc --project src/electron/tsconfig.json",
-    "dist:mac": "bun run transpile:electron && bun run build && electron-builder --mac --arm64",
-    "dist:win": "bun run transpile:electron && bun run build && electron-builder --win --x64",
-    "dist:linux": "bun run transpile:electron && bun run build && electron-builder --linux --x64"
+    "dist:mac": "bun run transpile:electron && bun run build && electron-builder --mac --arm64 --publish never",
+    "dist:win": "bun run transpile:electron && bun run build && electron-builder --win --x64 --publish never",
+    "dist:linux": "bun run transpile:electron && bun run build && electron-builder --linux --x64 --publish never"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
